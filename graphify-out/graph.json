@@ -1,0 +1,198 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {},
+  "nodes": [
+    {
+      "label": "Antimicrobial Resistance (AMR)",
+      "file_type": "rationale",
+      "source_file": "D:/AMR/Confernce_Final_Published (1).md",
+      "source_location": null,
+      "rationale": "Critical global health threat driving the need for rapid pathogen identification to support antibiotic stewardship.",
+      "id": "confernce_final_published_1_amr",
+      "community": 0,
+      "norm_label": "antimicrobial resistance (amr)"
+    },
+    {
+      "label": "Raman Spectroscopy",
+      "file_type": "rationale",
+      "source_file": "D:/AMR/Confernce_Final_Published (1).md",
+      "source_location": null,
+      "rationale": "Provides molecular fingerprints for culture-free bacterial identification by measuring inelastic scattering.",
+      "id": "confernce_final_published_1_raman_spectroscopy",
+      "community": 2,
+      "norm_label": "raman spectroscopy"
+    },
+    {
+      "label": "Multimodal Convolutional Neural Network",
+      "file_type": "rationale",
+      "source_file": "D:/AMR/Confernce_Final_Published (1).md",
+      "source_location": null,
+      "rationale": "Proposed architecture that jointly processes 1D spectra and 2D CWT representations for real-time classification with minimal parameter budget.",
+      "id": "confernce_final_published_1_multimodal_cnn",
+      "community": 1,
+      "norm_label": "multimodal convolutional neural network"
+    },
+    {
+      "label": "Continuous Wavelet Transform (CWT)",
+      "file_type": "rationale",
+      "source_file": "D:/AMR/Confernce_Final_Published (1).md",
+      "source_location": null,
+      "rationale": "Transforms 1D signal into a 2D time-frequency image to enhance multi-scale patterns.",
+      "id": "confernce_final_published_1_cwt",
+      "community": 3,
+      "norm_label": "continuous wavelet transform (cwt)"
+    },
+    {
+      "label": "Support Vector Machine (SVM)",
+      "file_type": "rationale",
+      "source_file": "D:/AMR/Confernce_Final_Published (1).md",
+      "source_location": null,
+      "rationale": "Baseline model offering high accuracy but incurring large memory footprint and high inference latency.",
+      "id": "confernce_final_published_1_svm",
+      "community": 1,
+      "norm_label": "support vector machine (svm)"
+    },
+    {
+      "label": "Simple Concatenation",
+      "file_type": "rationale",
+      "source_file": "D:/AMR/Confernce_Final_Published (1).md",
+      "source_location": null,
+      "rationale": "Minimalist fusion strategy chosen over complex mechanisms for tightly coupled modalities.",
+      "id": "confernce_final_published_1_simple_concatenation",
+      "community": 1,
+      "norm_label": "simple concatenation"
+    },
+    {
+      "label": "Point-of-Care Diagnostics",
+      "file_type": "rationale",
+      "source_file": "D:/AMR/Confernce_Final_Published (1).md",
+      "source_location": null,
+      "rationale": "Deployment target requiring lightweight models for portable, resource-constrained devices.",
+      "id": "confernce_final_published_1_poc_diagnostics",
+      "community": 0,
+      "norm_label": "point-of-care diagnostics"
+    },
+    {
+      "label": "Morlet Mother Wavelet",
+      "file_type": "rationale",
+      "source_file": "D:/AMR/Confernce_Final_Published (1).md",
+      "source_location": null,
+      "rationale": "Selected for CWT due to favorable joint time-frequency localization.",
+      "id": "confernce_final_published_1_morlet_wavelet",
+      "community": 3,
+      "norm_label": "morlet mother wavelet"
+    },
+    {
+      "label": "Murray et al. (2022)",
+      "file_type": "paper",
+      "source_file": "D:/AMR/Confernce_Final_Published (1).md",
+      "source_location": null,
+      "id": "confernce_final_published_1_murray_2022",
+      "community": 0,
+      "norm_label": "murray et al. (2022)"
+    },
+    {
+      "label": "Ho et al. (2019)",
+      "file_type": "paper",
+      "source_file": "D:/AMR/Confernce_Final_Published (1).md",
+      "source_location": null,
+      "id": "confernce_final_published_1_ho_2019",
+      "community": 2,
+      "norm_label": "ho et al. (2019)"
+    }
+  ],
+  "links": [
+    {
+      "relation": "addresses",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "D:/AMR/Confernce_Final_Published (1).md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "confernce_final_published_1_poc_diagnostics",
+      "target": "confernce_final_published_1_amr"
+    },
+    {
+      "relation": "cites",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "D:/AMR/Confernce_Final_Published (1).md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "confernce_final_published_1_amr",
+      "target": "confernce_final_published_1_murray_2022"
+    },
+    {
+      "relation": "processes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "D:/AMR/Confernce_Final_Published (1).md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "confernce_final_published_1_multimodal_cnn",
+      "target": "confernce_final_published_1_raman_spectroscopy"
+    },
+    {
+      "relation": "cites",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "D:/AMR/Confernce_Final_Published (1).md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "confernce_final_published_1_raman_spectroscopy",
+      "target": "confernce_final_published_1_ho_2019"
+    },
+    {
+      "relation": "incorporates",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "D:/AMR/Confernce_Final_Published (1).md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "confernce_final_published_1_multimodal_cnn",
+      "target": "confernce_final_published_1_cwt"
+    },
+    {
+      "relation": "uses_for_fusion",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "D:/AMR/Confernce_Final_Published (1).md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "confernce_final_published_1_multimodal_cnn",
+      "target": "confernce_final_published_1_simple_concatenation"
+    },
+    {
+      "relation": "targets",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "D:/AMR/Confernce_Final_Published (1).md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "confernce_final_published_1_multimodal_cnn",
+      "target": "confernce_final_published_1_poc_diagnostics"
+    },
+    {
+      "relation": "benchmarked_against",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "D:/AMR/Confernce_Final_Published (1).md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "confernce_final_published_1_multimodal_cnn",
+      "target": "confernce_final_published_1_svm"
+    },
+    {
+      "relation": "uses",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "D:/AMR/Confernce_Final_Published (1).md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "confernce_final_published_1_cwt",
+      "target": "confernce_final_published_1_morlet_wavelet"
+    }
+  ],
+  "hyperedges": []
+}
