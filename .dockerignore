@@ -1,0 +1,16 @@
+.git
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+env/
+venv/
+build/
+dist/
+data/
+graphify-out/
+tmp/
+*.egg-info
+.vscode/
+*.sqlite3
+/.pytest_cache
