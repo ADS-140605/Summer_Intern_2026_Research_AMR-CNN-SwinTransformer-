@@ -38,6 +38,8 @@ class Conv1DBranch(nn.Module):
         self.feature_dim = feature_dim
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if x.ndim == 1:
+            x = x.unsqueeze(0)
         if x.ndim == 2:
             x = x.unsqueeze(1)
         x = self.features(x)
@@ -70,7 +72,13 @@ class Conv2DBranch(nn.Module):
         self.feature_dim = feature_dim
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        if x.ndim == 3:
+        # Accept single-sample inputs in a few common shapes and
+        # normalize to a batched (N, C, H, W) tensor.
+        if x.ndim == 2:
+            # (H, W) -> (1, 1, H, W)
+            x = x.unsqueeze(0).unsqueeze(0)
+        elif x.ndim == 3:
+            # (C, H, W) -> (1, C, H, W)
             x = x.unsqueeze(0)
         x = self.features(x)
         return x.flatten(1)

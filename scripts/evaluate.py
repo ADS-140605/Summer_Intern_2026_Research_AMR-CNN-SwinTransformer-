@@ -7,6 +7,7 @@ from pathlib import Path
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
+import logging
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -32,6 +33,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
     dataset = RamanNpzDataset(args.data)
     train_set, validation_set, test_set = stratified_split(dataset, train_ratio=args.train_ratio, validation_ratio=args.validation_ratio, seed=args.seed)
     test_loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=False, collate_fn=collate_multimodal)
@@ -50,7 +52,7 @@ def main() -> None:
             "labels": test_labels.tolist(),
         }
         write_metrics(args.output, metrics)
-        print(f"Test accuracy: {metrics['accuracy']:.4f}")
+        logging.info(f"Test accuracy: {metrics['accuracy']:.4f}")
         return
 
     device = torch.device(args.device)
@@ -68,7 +70,7 @@ def main() -> None:
     criterion = torch.nn.CrossEntropyLoss()
     metrics = evaluate_model(model.to(device), test_loader, criterion, device, args.model)
     write_metrics(args.output, metrics)
-    print(f"Test accuracy: {metrics['accuracy']:.4f}")
+    logging.info(f"Test accuracy: {metrics['accuracy']:.4f}")
 
 
 if __name__ == "__main__":

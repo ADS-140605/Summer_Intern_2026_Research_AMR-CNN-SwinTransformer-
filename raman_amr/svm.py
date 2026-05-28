@@ -59,10 +59,12 @@ class RamanSVMClassifier:
         return self.pipeline.score(features, labels)
 
     def save(self, path: str | Path) -> None:
-        joblib.dump(self.pipeline, Path(path))
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        joblib.dump(self.pipeline, str(path))
 
     @classmethod
     def load(cls, path: str | Path) -> "RamanSVMClassifier":
         instance = cls()
-        instance.pipeline = joblib.load(Path(path))
+        instance.pipeline = joblib.load(str(path))
         return instance

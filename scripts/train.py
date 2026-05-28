@@ -7,6 +7,7 @@ from pathlib import Path
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
+import logging
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -34,6 +35,8 @@ def main() -> None:
     args = parse_args()
     set_seed(args.seed)
 
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+
     if args.model == "svm":
         raise SystemExit("Use `scripts/evaluate.py` or a dedicated SVM experiment for the scikit-learn baseline.")
 
@@ -59,7 +62,7 @@ def main() -> None:
         validation_result = evaluate_model(model, validation_loader, criterion, device, args.model)
         scheduler.step(validation_result["accuracy"])
 
-        print(
+        logging.info(
             f"Epoch {epoch:02d} | train loss {train_result.loss:.4f} acc {train_result.accuracy:.4f} | "
             f"val loss {validation_result['loss']:.4f} acc {validation_result['accuracy']:.4f}"
         )
@@ -77,11 +80,11 @@ def main() -> None:
                 },
             )
 
-    print(f"Best checkpoint saved to {best_checkpoint_path}")
+    logging.info(f"Best checkpoint saved to {best_checkpoint_path}")
     load_checkpoint(best_checkpoint_path, model, device)
     test_metrics = evaluate_model(model, test_loader, criterion, device, args.model)
     write_metrics(Path(args.output_dir) / f"{args.model}_test_metrics.json", test_metrics)
-    print(f"Test accuracy: {test_metrics['accuracy']:.4f}")
+    logging.info(f"Test accuracy: {test_metrics['accuracy']:.4f}")
 
 
 if __name__ == "__main__":
