@@ -9,6 +9,11 @@ import torch
 from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset, Subset
 
+try:
+    import pywt
+except Exception:  # pragma: no cover - optional dependency
+    pywt = None
+
 
 class RamanNpzDataset(Dataset):
     """Dataset backed by a `.npz` file with Raman tensors and labels.
@@ -103,3 +108,72 @@ def stratified_split(
 def collate_multimodal(batch):
     spectral, wavelet, labels = zip(*batch)
     return torch.stack(list(spectral)), torch.stack(list(wavelet)), torch.stack(list(labels))
+
+
+def compute_cwt_image(
+    spectrum: np.ndarray, *,
+    scales: int = 224,
+    out_width: int = 224,
+    wavelet: str = "morl",
+) -> np.ndarray:
+    """Compute a magnitude CWT image for a single 1D spectrum.
+
+    Returns an array with shape (3, out_height, out_width) with channel-first layout
+    and dtype float32. The 2D magnitude map is linearly scaled to [0, 1]
+    and replicated across three channels to be compatible with the 2D branch.
+    """
+    if pywt is None:
+        raise RuntimeError("PyWavelets is required for CWT computation. Install PyWavelets.")
+
+    spectrum = np.asarray(spectrum, dtype=float)
+    if spectrum.ndim != 1:
+        spectrum = spectrum.flatten()
+
+    # logarithmically spaced scales from 1..scales
+    scales_arr = np.logspace(0, np.log10(scales), num=scales)
+    coeffs, _ = pywt.cwt(spectrum, scales_arr, wavelet)
+    magnitude = np.abs(coeffs)
+
+    # resample time axis from original length to out_width
+    orig_len = magnitude.shape[1]
+    if orig_len == out_width:
+        img = magnitude
+    else:
+        x_old = np.linspace(0.0, 1.0, orig_len)
+        x_new = np.linspace(0.0, 1.0, out_width)
+        img = np.vstack([np.interp(x_new, x_old, row) for row in magnitude])
+
+    # normalize to [0,1]
+    maxv = img.max() if img.size else 1.0
+    img = img.astype(np.float32) / (float(maxv) + 1e-8)
+
+    # ensure shape (H, W) -> (3, H, W)
+    img3 = np.stack([img, img, img], axis=0).astype(np.float32)
+    return img3
+
+
+def build_wavelet_stack(spectra: np.ndarray, *, batch_size: int = 256) -> np.ndarray:
+    """Compute CWT images for a batch of spectra.
+
+    Returns an array of shape (N, 3, H, W) dtype float32.
+    """
+    spectra = np.asarray(spectra)
+    images = []
+    for i in range(0, len(spectra), batch_size):
+        batch = spectra[i : i + batch_size]
+        for spec in batch:
+            images.append(compute_cwt_image(spec))
+
+    return np.stack(images, axis=0)
+
+
+def save_npz_with_wavelets(spectral: np.ndarray, labels: np.ndarray, out_path: str | Path) -> None:
+    """Compute wavelet images for `spectral` and save a compressed .npz with keys
+    `spectral`, `wavelet`, and `labels`.
+    """
+    spectral = np.asarray(spectral, dtype=np.float32)
+    labels = np.asarray(labels, dtype=np.int64)
+    wavelet = build_wavelet_stack(spectral)
+    out_path = Path(out_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(out_path, spectral=spectral, wavelet=wavelet, labels=labels)

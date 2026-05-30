@@ -8,3 +8,4 @@ joblib
 captum
 shap
 jupyterlab
+PyWavelets>=1.3.0
