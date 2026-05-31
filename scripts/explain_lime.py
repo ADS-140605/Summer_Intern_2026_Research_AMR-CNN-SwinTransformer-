@@ -7,7 +7,7 @@ import argparse
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 
-from raman_amr.lime import explain_instance, top_features
+from explainable_ai.lime import explain_instance, top_features
 
 
 def main():
