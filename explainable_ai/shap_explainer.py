@@ -51,29 +51,40 @@ def explain_instance_shap(
     if use_shap_explainer:
         # let shap choose best explainer for the model + data
         expl = shap.Explainer(predict_fn, background)
-        shap_values = expl(instance)
-        # shap_values may be a shap._explanation.Explanation object
-        result = {
-            "shap_values": shap_values.values if hasattr(shap_values, "values") else shap_values,
-            "expected_value": getattr(shap_values, "base_values", None),
-            "feature_names": feature_names,
-            "instance": instance,
-        }
-        return result
+        # some shap.Explainer variants (Permutation) require large max_evals
+        # which can be impractical for high-dim data. Detect and fallback to
+        # KernelExplainer in that case.
+        expl_module = getattr(expl.__class__, "__module__", "").lower()
+        expl_name = getattr(expl.__class__, "__name__", "").lower()
+        if "permutation" in expl_module or "permutation" in expl_name:
+            # force fallback to KernelExplainer below
+            use_shap_explainer = False
+        else:
+            shap_values = expl(instance)
+            # shap_values may be a shap._explanation.Explanation object
+            result = {
+                "shap_values": shap_values.values if hasattr(shap_values, "values") else shap_values,
+                "expected_value": getattr(shap_values, "base_values", None),
+                "feature_names": feature_names,
+                "instance": instance,
+            }
+            return result
 
     # fallback to KernelExplainer
     if not hasattr(shap, "KernelExplainer"):
         raise RuntimeError("shap.KernelExplainer not available in this shap installation")
 
     # shap.KernelExplainer expects a function that maps samples to a 1D/2D array.
-    masker = None
+    # KernelExplainer expects a raw background array; shap.maskers are used
+    # with the unified `shap.Explainer`. Create a masker separately but pass
+    # the raw background to KernelExplainer.
+    shap_masker = None
     try:
-        # try to use maskers if available (shap 0.39+)
-        masker = shap.maskers.Independent(background)
+        shap_masker = shap.maskers.Independent(background)
     except Exception:
-        masker = background
+        shap_masker = None
 
-    expl = shap.KernelExplainer(predict_fn, masker)
+    expl = shap.KernelExplainer(predict_fn, background)
     # nsamples controls runtime; higher -> more accurate
     shap_values = expl.shap_values(instance, nsamples=nsamples)
 
