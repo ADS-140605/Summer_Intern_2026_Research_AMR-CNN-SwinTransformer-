@@ -1,6 +1,6 @@
 # Raman AMR Models
 
-PyTorch implementations of the multimodal CNN described in the paper and the comparison models it evaluates.
+PyTorch implementations of the multimodal CNN described in the paper and the comparison models it evaluates
 
 ## Included models
 
