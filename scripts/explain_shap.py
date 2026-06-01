@@ -13,7 +13,9 @@ from explainable_ai.shap_explainer import explain_instance_shap, top_shap_featur
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--index", type=int, default=0, help="which test instance to explain")
-    parser.add_argument("--nsamples", type=int, default=200, help="number of SHAP samples for KernelExplainer")
+    parser.add_argument("--nsamples", type=int, default=400, help="number of SHAP samples for KernelExplainer")
+    parser.add_argument("--class-idx", type=int, default=None, help="class index to explain (default: predicted class)")
+    parser.add_argument("--background-size", type=int, default=30, help="number of background samples")
     args = parser.parse_args()
 
     # load data
@@ -32,16 +34,25 @@ def main():
     def predict_fn(arr):
         return clf.predict_proba(arr)
 
-    # use a small background set sampled from X
-    bg = X[np.random.RandomState(0).choice(len(X), size=min(50, len(X)), replace=False)]
+    # use a background set sampled from X
+    bg = X[np.random.RandomState(0).choice(len(X), size=min(100, len(X)), replace=False)]
 
-    explanation = explain_instance_shap(predict_fn, bg, instance, explainer="auto", nsamples=args.nsamples)
+    explanation = explain_instance_shap(
+        predict_fn,
+        bg,
+        instance,
+        nsamples=args.nsamples,
+        class_idx=args.class_idx,
+        max_background=args.background_size,
+        random_state=0,
+    )
     tf = top_shap_features(explanation, k=10)
 
     print(f"Explaining instance {idx}")
-    print("Top features by absolute SHAP value (idx, wavenumber, score):")
-    for i, score in zip(tf["top_indices"], tf["scores"]):
-        print(i, wavenumbers[i], score)
+    print(f"Class explained: {explanation['class_idx']}")
+    print("Top features by absolute SHAP value (idx, wavenumber, shap, abs_shap):")
+    for i, score, abs_score in zip(tf["top_indices"], tf["scores"], tf["abs_scores"]):
+        print(i, wavenumbers[i], score, abs_score)
 
 
 if __name__ == "__main__":

@@ -1,123 +1,114 @@
-"""Simple SHAP wrapper utilities for spectral data.
+"""Robust SHAP utilities for spectral data (Kernel SHAP only).
 
-Provides a small convenience function around the `shap` library to
-explain individual instances using `KernelExplainer` (model-agnostic)
-or `shap.Explainer` when available.
+This rewrite keeps behavior predictable for high-dimensional multi-class data
+by always explaining a single target output (class probability).
 """
 from typing import Callable, Optional, Dict, Any, Sequence
 
 import numpy as np
 
 
+def _pick_background(background: np.ndarray, max_background: int, random_state: Optional[int]) -> np.ndarray:
+    """Downsample background for stable Kernel SHAP runtime."""
+    background = np.asarray(background)
+    if background.ndim != 2:
+        raise ValueError("background must be 2D: (n_samples, n_features)")
+    if background.shape[0] <= max_background:
+        return background
+
+    rng = np.random.RandomState(random_state)
+    idx = rng.choice(background.shape[0], size=max_background, replace=False)
+    return background[idx]
+
+
 def explain_instance_shap(
     predict_fn: Callable[[np.ndarray], np.ndarray],
     background: np.ndarray,
     instance: np.ndarray,
-    explainer: str = "auto",
-    nsamples: int = 100,
-    random_state: Optional[int] = None,
+    nsamples: int = 300,
+    class_idx: Optional[int] = None,
+    max_background: int = 30,
+    random_state: Optional[int] = 0,
     feature_names: Optional[Sequence[str]] = None,
 ) -> Dict[str, Any]:
-    """Explain `instance` using SHAP.
+    """Explain one instance with Kernel SHAP.
 
     Args:
         predict_fn: function mapping (N, n_features) -> (N,) or (N, n_classes).
-        background: background dataset for the explainer (e.g., subset of X).
-        instance: single instance or array of instances to explain.
-        explainer: 'auto', 'kernel', or 'shap' to pick specific explainer.
-        nsamples: number of samples for Kernel SHAP (if used).
-        random_state: seed passed to SHAP explainer where supported.
-        feature_names: optional list of feature names.
+        background: background samples.
+        instance: one sample with shape (n_features,) or (1, n_features).
+        nsamples: Kernel SHAP sample budget.
+        class_idx: target class for multi-class outputs. If None, predicted class is used.
+        max_background: maximum number of background samples retained.
+        random_state: random seed for background downsampling.
+        feature_names: optional names for features.
 
     Returns:
-        Dict with keys: `shap_values`, `expected_value`, `feature_names`, `instance`.
+        Dict containing one-dimensional SHAP attribution for the instance.
     """
-    background = np.asarray(background)
-    instance = np.atleast_2d(instance)
-
     try:
         import shap
     except Exception as e:
         raise RuntimeError("shap package is required for SHAP explanations") from e
 
-    # prefer the unified shap.Explainer when available and requested
-    use_shap_explainer = False
-    if explainer == "shap":
-        use_shap_explainer = True
-    elif explainer == "auto":
-        # shap.Explainer is available in newer versions; try to use it
-        use_shap_explainer = hasattr(shap, "Explainer")
+    x = np.atleast_2d(np.asarray(instance))
+    if x.shape[0] != 1:
+        raise ValueError("instance must represent exactly one sample")
 
-    if use_shap_explainer:
-        # let shap choose best explainer for the model + data
-        expl = shap.Explainer(predict_fn, background)
-        # some shap.Explainer variants (Permutation) require large max_evals
-        # which can be impractical for high-dim data. Detect and fallback to
-        # KernelExplainer in that case.
-        expl_module = getattr(expl.__class__, "__module__", "").lower()
-        expl_name = getattr(expl.__class__, "__name__", "").lower()
-        if "permutation" in expl_module or "permutation" in expl_name:
-            # force fallback to KernelExplainer below
-            use_shap_explainer = False
+    bg = _pick_background(np.asarray(background), max_background=max_background, random_state=random_state)
+
+    # infer output shape on the target instance
+    pred_x = np.asarray(predict_fn(x))
+    if pred_x.ndim == 1:
+        target_idx = None
+
+        def wrapped_predict(arr: np.ndarray) -> np.ndarray:
+            p = np.asarray(predict_fn(arr))
+            return p.ravel()
+
+    elif pred_x.ndim == 2:
+        if class_idx is None:
+            target_idx = int(np.argmax(pred_x[0]))
         else:
-            shap_values = expl(instance)
-            # shap_values may be a shap._explanation.Explanation object
-            result = {
-                "shap_values": shap_values.values if hasattr(shap_values, "values") else shap_values,
-                "expected_value": getattr(shap_values, "base_values", None),
-                "feature_names": feature_names,
-                "instance": instance,
-            }
-            return result
+            target_idx = int(class_idx)
 
-    # fallback to KernelExplainer
-    if not hasattr(shap, "KernelExplainer"):
-        raise RuntimeError("shap.KernelExplainer not available in this shap installation")
+        def wrapped_predict(arr: np.ndarray) -> np.ndarray:
+            p = np.asarray(predict_fn(arr))
+            return p[:, target_idx]
 
-    # shap.KernelExplainer expects a function that maps samples to a 1D/2D array.
-    # KernelExplainer expects a raw background array; shap.maskers are used
-    # with the unified `shap.Explainer`. Create a masker separately but pass
-    # the raw background to KernelExplainer.
-    shap_masker = None
-    try:
-        shap_masker = shap.maskers.Independent(background)
-    except Exception:
-        shap_masker = None
+    else:
+        raise ValueError("predict_fn output must be 1D or 2D")
 
-    expl = shap.KernelExplainer(predict_fn, background)
-    # nsamples controls runtime; higher -> more accurate
-    shap_values = expl.shap_values(instance, nsamples=nsamples)
+    explainer = shap.KernelExplainer(wrapped_predict, bg)
+    shap_values = explainer.shap_values(x, nsamples=nsamples)
+    shap_values = np.asarray(shap_values)
+    if shap_values.ndim == 2:
+        # expected shape for one instance is (1, n_features)
+        values_1d = shap_values[0]
+    else:
+        values_1d = shap_values.ravel()
+
+    expected_value = explainer.expected_value
+    if isinstance(expected_value, (list, tuple, np.ndarray)):
+        expected_value = float(np.asarray(expected_value).ravel()[0])
 
     return {
-        "shap_values": shap_values,
-        "expected_value": expl.expected_value,
-        "feature_names": feature_names,
-        "instance": instance,
+        "shap_values": values_1d,
+        "expected_value": float(expected_value),
+        "feature_names": list(feature_names) if feature_names is not None else None,
+        "instance": x[0],
+        "class_idx": target_idx,
+        "prediction": pred_x[0] if pred_x.ndim == 2 else float(pred_x.ravel()[0]),
     }
 
 
 def top_shap_features(explanation: Dict[str, Any], k: int = 10) -> Dict[str, np.ndarray]:
-    """Return indices of top-k features by absolute SHAP value for the first instance.
-
-    Handles both single-output and multi-output SHAP values.
-    """
-    sv = explanation["shap_values"]
-    # convert to numpy array of shape (n_outputs, n_instances, n_features) or (n_instances, n_features)
-    if isinstance(sv, list):
-        # list per class
-        sv_arr = np.array([np.asarray(s) for s in sv])
-        # pick first output/class for top features
-        vals = sv_arr[:, 0, :].mean(axis=0)
-    else:
-        sv_arr = np.asarray(sv)
-        if sv_arr.ndim == 3:
-            # (n_instances, n_outputs, n_features) or (n_outputs, n_instances, n_features)
-            # try to find features for first instance
-            vals = np.abs(sv_arr[0]).mean(axis=0) if sv_arr.shape[0] > 0 else np.abs(sv_arr).mean(axis=0)
-        elif sv_arr.ndim == 2:
-            vals = np.abs(sv_arr[0])
-        else:
-            vals = np.abs(sv_arr).ravel()
-
-    idx = np.argsort(-vals)[:k]
-    return {"top_indices": idx, "scores": vals[idx]}
+    """Return top-k features by absolute SHAP value."""
+    sv = np.asarray(explanation["shap_values"]).ravel()
+    abs_sv = np.abs(sv)
+    idx = np.argsort(-abs_sv)[:k]
+    return {
+        "top_indices": idx,
+        "scores": sv[idx],
+        "abs_scores": abs_sv[idx],
+    }
