@@ -1,0 +1,26 @@
+Title: Interpretable, Data-Efficient Raman Diagnostics for Antibiotic Resistance
+
+Research statement (simple words):
+We want to make a reliable and easy-to-understand method that uses Raman spectroscopy to detect antibiotic resistance in bacteria. Right now, machine learning models can learn from spectra but often need lots of labeled data and can fail when the instrument or species changes. Our idea is to combine a small set of simple, chemistry-based rules (for example, which peaks correspond to which molecules) with a learning model that can adapt quickly using only a few labeled spectra.
+
+Why this matters:
+- Collecting labeled Raman spectra is slow and costly.
+- Labs use different instruments, so models that work in one place may fail in another.
+- Doctors need explanations they can trust, not just black-box predictions.
+
+What we will do:
+- Use existing Raman datasets to train a model that learns good spectral representations.
+- Build a compact set of human-readable rules about important peaks and peak ratios.
+- Combine the rules with a few-shot learning method so the model can adapt to new species or instrument settings with only a few labeled examples.
+
+Expected outcome:
+- A method that reaches useful accuracy with very few labels.
+- Predictions that can be checked against simple spectral rules, improving trust.
+- A reproducible pipeline to test robustness across instruments and years.
+
+Potential next steps:
+- Draft a short experiment plan and code scaffold to run baseline tests on the provided `data/ramanspy` arrays.
+- Add a README with quick run instructions.
+
+Contact:
+If you want this written into a short one-page summary or implemented as a small code scaffold, tell me which you prefer and I will add it to the repo.
