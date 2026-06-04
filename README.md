@@ -45,3 +45,22 @@ Evaluate the SVM baseline:
 python scripts/evaluate.py --data path/to/dataset.npz --model svm
 ```
 
+## Novel Research Scaffold
+
+A small scaffold for exploring the proposed neuro-symbolic few-shot idea is included in the `novel research` folder.
+
+- **Files:** `novel research/main.py` (small CLI demo) and `research_statement.txt` (plain-language research statement).
+- **Purpose:** quick smoke tests on the existing `data/ramanspy` `.npy` arrays and a place to add prototypes for the idea.
+
+Usage examples:
+
+```bash
+# list datasets found under data/ramanspy
+python "novel research/main.py" --list
+
+# run the smoke nearest-centroid demo (quotes needed because folder name contains a space)
+python "novel research/main.py" --demo
+```
+
+If you'd like, I can expand the scaffold with training/evaluation scripts, a README inside `novel research`, or a one-page summary.
+
