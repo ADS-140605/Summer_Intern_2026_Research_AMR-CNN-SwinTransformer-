@@ -64,3 +64,27 @@ python "novel research/main.py" --demo
 
 If you'd like, I can expand the scaffold with training/evaluation scripts, a README inside `novel research`, or a one-page summary.
 
+**How to run the novel research demo**
+
+- **List datasets:**
+
+```bash
+python "novel research/main.py" --list
+```
+
+- **Run the smoke demo:**
+
+```bash
+python "novel research/main.py" --demo
+```
+
+- **Notes:**
+	- On Windows PowerShell or cmd, keep the quotes around the path because the folder name contains a space.
+	- The demo uses the `.npy` files under `data/ramanspy` (e.g., `X_reference.npy`, `X_2018clinical.npy`). If labels (`y_*.npy`) are not present the demo will only show dataset shapes.
+	- See the plain-language statement at `research_statement.txt` for the project summary.
+
+Files to inspect:
+
+- `novel research/main.py` — small CLI demo that lists datasets and runs a nearest-centroid baseline.
+- `research_statement.txt` — simple research statement and next steps.
+
