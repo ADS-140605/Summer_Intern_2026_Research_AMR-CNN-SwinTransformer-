@@ -38,8 +38,9 @@ def find_datasets():
 
 def nearest_centroid_baseline(X, y):
     classes = np.unique(y)
-    centroids = {int(c): X[y == c].mean(axis=0) for c in classes}
-    preds = np.array([min(centroids.keys(), key=lambda c: np.linalg.norm(x - centroids[c])) for x in X])
+    centroids = {c: X[y == c].mean(axis=0) for c in classes}
+    # predict by finding nearest centroid for each sample
+    preds = np.array([min(classes, key=lambda c: np.linalg.norm(x - centroids[c])) for x in X])
     acc = (preds == y).mean()
     return acc
 
