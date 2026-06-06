@@ -88,3 +88,21 @@ Files to inspect:
 - `novel research/main.py` — small CLI demo that lists datasets and runs a nearest-centroid baseline.
 - `research_statement.txt` — simple research statement and next steps.
 
+Tip: avoid folder name spaces
+
+If you prefer running the demo without quoting the path, rename the folder to remove the space. Example commands:
+
+```powershell
+Rename-Item -Path 'novel research' -NewName 'novel_research'
+```
+
+```cmd
+ren "novel research" novel_research
+```
+
+After renaming you can run:
+
+```bash
+python novel_research/main.py --demo
+```
+
