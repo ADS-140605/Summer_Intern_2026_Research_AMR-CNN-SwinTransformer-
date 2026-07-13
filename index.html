@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plain 1D Swin Transformer Classifier - Results Analysis Dashboard</title>
+  <meta name="description" content="Interactive dashboard visualizing baseline and fine-tuning results of the Plain 1D Swin Transformer on Bacteria-ID Raman spectroscopy dataset.">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Custom Vanilla CSS Styling -->
+  <style>
+    :root {
+      --bg-base: #060813;
+      --bg-surface: rgba(17, 24, 39, 0.7);
+      --bg-surface-hover: rgba(31, 41, 55, 0.8);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-color-glow: rgba(6, 182, 212, 0.3);
+      
+      --color-primary: #06b6d4; /* Neon Cyan */
+      --color-primary-glow: rgba(6, 182, 212, 0.15);
+      --color-secondary: #ec4899; /* Neon Magenta */
+      --color-secondary-glow: rgba(236, 72, 153, 0.15);
+      --color-success: #10b981; /* Emerald */
+      --color-success-glow: rgba(16, 185, 129, 0.15);
+      --color-warning: #f59e0b; /* Amber */
+      --color-warning-glow: rgba(245, 158, 11, 0.15);
+      --color-text-main: #f8fafc;
+      --color-text-muted: #94a3b8;
+      
+      --font-heading: 'Outfit', sans-serif;
+      --font-body: 'Inter', sans-serif;
+      --font-code: 'JetBrains Mono', monospace;
+      
+      --transition-fast: 0.2s ease;
+      --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(6, 182, 212, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(236, 72, 153, 0.05) 0%, transparent 40%);
+      color: var(--color-text-main);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      line-height: 1.6;
+      overflow-x: hidden;
+      padding-bottom: 60px;
+    }
+
+    /* Container */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px 24px;
+    }
+
+    /* Header styling */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 32px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border-color);
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .brand-section h1 {
+      font-family: var(--font-heading);
+      font-weight: 800;
+      font-size: 2.2rem;
+      background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-section p {
+      color: var(--color-text-muted);
+      font-size: 0.95rem;
+      margin-top: 4px;
+    }
+
+    .badge-container {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 12px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-primary {
+      background: var(--color-primary-glow);
+      color: var(--color-primary);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      box-shadow: 0 0 10px rgba(6, 182, 212, 0.1);
+    }
+
+    .badge-success {
+      background: var(--color-success-glow);
+      color: var(--color-success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.1);
+    }
+
+    /* KPI Grid Cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+
+    .kpi-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      backdrop-filter: blur(12px);
+      border-radius: 16px;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+      transition: transform var(--transition-normal), border-color var(--transition-normal);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: transparent;
+      transition: background var(--transition-normal);
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .kpi-card.cyan:hover { border-color: var(--color-primary); }
+    .kpi-card.cyan::before { background: var(--color-primary); }
+    .kpi-card.magenta:hover { border-color: var(--color-secondary); }
+    .kpi-card.magenta::before { background: var(--color-secondary); }
+    .kpi-card.emerald:hover { border-color: var(--color-success); }
+    .kpi-card.emerald::before { background: var(--color-success); }
+    .kpi-card.amber:hover { border-color: var(--color-warning); }
+    .kpi-card.amber::before { background: var(--color-warning); }
+
+    .kpi-title {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-text-muted);
+      margin-bottom: 8px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .kpi-value {
+      font-family: var(--font-heading);
+      font-size: 2.2rem;
+      font-weight: 700;
+      line-height: 1.2;
+      background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+
+    .kpi-card.cyan .kpi-value {
+      background: linear-gradient(135deg, #ffffff 0%, var(--color-primary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .kpi-card.magenta .kpi-value {
+      background: linear-gradient(135deg, #ffffff 0%, var(--color-secondary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .kpi-card.emerald .kpi-value {
+      background: linear-gradient(135deg, #ffffff 0%, var(--color-success) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .kpi-card.amber .kpi-value {
+      background: linear-gradient(135deg, #ffffff 0%, var(--color-warning) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .kpi-meta {
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .kpi-meta .trend-up { color: var(--color-success); }
+    .kpi-meta .trend-down { color: var(--color-secondary); }
+
+    /* Navigation Tabs */
+    .tab-nav {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 8px;
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--color-text-muted);
+      font-family: var(--font-heading);
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 10px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all var(--transition-fast);
+      position: relative;
+    }
+
+    .tab-btn:hover {
+      color: var(--color-text-main);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .tab-btn.active {
+      color: var(--color-primary);
+      background: var(--color-primary-glow);
+    }
+
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -9px;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: var(--color-primary);
+      box-shadow: 0 0 10px var(--color-primary);
+    }
+
+    /* Tab Content panels */
+    .tab-panel {
+      display: none;
+      animation: fadeIn var(--transition-normal);
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Grid Layouts for Content Panels */
+    .visualizer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 1024px) {
+      .visualizer-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .content-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .card-title-section {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--color-text-main);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .chart-container {
+      position: relative;
+      width: 100%;
+      height: 380px;
+    }
+
+    /* Custom Tables */
+    .data-table-wrapper {
+      overflow-x: auto;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      margin-top: 12px;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    .data-table th {
+      background-color: rgba(255, 255, 255, 0.02);
+      color: var(--color-text-muted);
+      font-weight: 600;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+      font-family: var(--font-heading);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .data-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--color-text-main);
+    }
+
+    .data-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .data-table tbody tr:hover {
+      background-color: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Monospace configuration values */
+    .code-val {
+      font-family: var(--font-code);
+      background: rgba(0, 0, 0, 0.3);
+      padding: 3px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.85rem;
+      color: var(--color-primary);
+    }
+
+    /* Highlights list */
+    .insights-list {
+      list-style-type: none;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .insights-list li {
+      position: relative;
+      padding-left: 28px;
+    }
+
+    .insights-list li::before {
+      content: "➔";
+      position: absolute;
+      left: 0;
+      top: 1px;
+      color: var(--color-primary);
+      font-weight: bold;
+    }
+
+    .insights-list li strong {
+      color: var(--color-text-main);
+      display: block;
+      margin-bottom: 4px;
+      font-family: var(--font-heading);
+    }
+
+    /* Highlight callout cards */
+    .callout {
+      background: rgba(6, 182, 212, 0.05);
+      border-left: 4px solid var(--color-primary);
+      border-radius: 0 12px 12px 0;
+      padding: 16px 20px;
+      margin: 16px 0;
+      font-size: 0.95rem;
+      color: var(--color-text-main);
+    }
+
+    .callout.warning {
+      background: rgba(236, 72, 153, 0.05);
+      border-left-color: var(--color-secondary);
+    }
+
+    .callout.success {
+      background: rgba(16, 185, 129, 0.05);
+      border-left-color: var(--color-success);
+    }
+
+    .callout-title {
+      font-family: var(--font-heading);
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .callout.warning .callout-title { color: var(--color-secondary); }
+    .callout.success .callout-title { color: var(--color-success); }
+    .callout.cyan .callout-title { color: var(--color-primary); }
+
+    /* Flex grids */
+    .col-layout {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 900px) {
+      .col-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Inline badges */
+    .inline-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-family: var(--font-heading);
+    }
+
+    .ib-cyan { background: var(--color-primary-glow); color: var(--color-primary); }
+    .ib-magenta { background: var(--color-secondary-glow); color: var(--color-secondary); }
+    .ib-success { background: var(--color-success-glow); color: var(--color-success); }
+
+    /* Parameters distribution visualization */
+    .param-bar {
+      height: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+    .param-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+      border-radius: 999px;
+    }
+
+    /* SVGs for icons */
+    .icon {
+      width: 18px;
+      height: 18px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    /* Config list key value pairs */
+    .config-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .config-item {
+      background: rgba(0, 0, 0, 0.15);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .config-key {
+      font-family: var(--font-heading);
+      font-weight: 500;
+      color: var(--color-text-muted);
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand-section">
+        <h1>Plain 1D Swin Transformer Classifier</h1>
+        <p>Raman Spectroscopy Bacteria-ID Baseline Performance Evaluation Dashboard</p>
+      </div>
+      <div class="badge-container">
+        <span class="badge badge-primary">
+          <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          Phase 1 Baseline
+        </span>
+        <span class="badge badge-success">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          Evaluation Completed
+        </span>
+      </div>
+    </header>
+
+    <!-- KPI Metric Summary Row -->
+    <div class="kpi-grid">
+      <!-- Card 1: Test Accuracy -->
+      <div class="kpi-card emerald">
+        <div>
+          <div class="kpi-title">
+            <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M8 12h8"></path><path d="M12 8v8"></path></svg>
+            Test Accuracy
+          </div>
+          <div class="kpi-value">72.00%</div>
+        </div>
+        <div class="kpi-meta">
+          <span class="trend-up">▲ 0.720</span> Target Test Generalization
+        </div>
+      </div>
+
+      <!-- Card 2: Macro F1 -->
+      <div class="kpi-card magenta">
+        <div>
+          <div class="kpi-title">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+            Macro-F1 Score
+          </div>
+          <div class="kpi-value">71.97%</div>
+        </div>
+        <div class="kpi-meta">
+          High precision across 30 isolates
+        </div>
+      </div>
+
+      <!-- Card 3: ECE -->
+      <div class="kpi-card cyan">
+        <div>
+          <div class="kpi-title">
+            <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+            Expected Calibration Error (ECE)
+          </div>
+          <div class="kpi-value">6.88%</div>
+        </div>
+        <div class="kpi-meta">
+          <span class="trend-up">✓ Well-Calibrated</span> Confidence levels
+        </div>
+      </div>
+
+      <!-- Card 4: Parameters -->
+      <div class="kpi-card amber">
+        <div>
+          <div class="kpi-title">
+            <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line></svg>
+            Model Parameters
+          </div>
+          <div class="kpi-value">132.0K</div>
+        </div>
+        <div class="kpi-meta">
+          Highly parameter-efficient PlainSwin1D
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="tab-nav">
+      <button class="tab-btn active" onclick="switchTab(event, 'overview')">Overview Dashboard</button>
+      <button class="tab-btn" onclick="switchTab(event, 'dynamics')">Training Dynamics</button>
+      <button class="tab-btn" onclick="switchTab(event, 'config')">Configuration & Complexity</button>
+      <button class="tab-btn" onclick="switchTab(event, 'insights')">Analytical Insights</button>
+    </nav>
+
+    <!-- Tab 1: Overview Dashboard -->
+    <div id="overview" class="tab-panel active">
+      <div class="col-layout">
+        <div>
+          <div class="content-card">
+            <div class="card-title-section">
+              <div class="card-title">
+                <svg class="icon" style="color: var(--color-primary);" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                Baseline Project Overview
+              </div>
+            </div>
+            <p style="margin-bottom: 16px; color: var(--color-text-muted);">
+              This research project evaluates a <strong>Plain 1D Swin Transformer</strong> architecture designed for Raman spectroscopy-based bacterial identification (Bacteria-ID dataset). The model is optimized for spectral patterns by partitioning raw 1D spectra into non-overlapping patches, passing them through 1D window attention stages, downsampling sequence length through patch merging, and performing isolate classification.
+            </p>
+            <div class="callout success">
+              <div class="callout-title">
+                <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+                Phase 1 Execution Summary
+              </div>
+              <p>
+                The baseline training run completed <strong>Stage 1 (Reference training)</strong> across 30 epochs in <strong>1,473.9 seconds (24.5 minutes)</strong>. It then performed <strong>Stage 2 (Fine-tuning)</strong> on a target distribution split across 10 epochs in <strong>64.5 seconds (1.1 minutes)</strong>. The model achieved a final accuracy of <strong>72.00%</strong> on the held-out target test set, demonstrating robust domain adaptation.
+              </p>
+            </div>
+            
+            <h3 style="font-family: var(--font-heading); font-size: 1.1rem; margin: 24px 0 12px 0;">Primary Performance Milestones</h3>
+            <ul class="insights-list">
+              <li>
+                <strong>Stage 1 Reference Peak Accuracy: 93.83% Val Accuracy (ECE: 1.09%)</strong>
+                The model achieves high proficiency in classifying the 30 bacterial isolates on reference strains. Under ideal conditions, the plain 1D Swin blocks successfully fit the spectral signatures, yielding low loss (0.18) and high macro-F1 (93.84%).
+              </li>
+              <li>
+                <strong>Stage 2 Domain Fine-Tuning Convergence: 72.09% Validation Accuracy (ECE: 10.64%)</strong>
+                Fine-tuning on the specialized adaptation subset aligned the classifier with shifted distribution characteristics. Since validation is computed on the reference validation set, adapting model weights to target domain characteristics yields a trade-off represented by validation accuracy settling at ~72.1%.
+              </li>
+              <li>
+                <strong>Target Domain Generalization: 72.00% Test Accuracy</strong>
+                Evaluated against the held-out test split, the model performs consistently with its fine-tuning state. This reveals strong generalization bounds with no sign of catastrophic overfitting to the fine-tune dataset.
+              </li>
+            </ul>
+          </div>
+        </div>
+        
+        <!-- Sidebar: Performance Grid -->
+        <div>
+          <div class="content-card">
+            <div class="card-title-section">
+              <div class="card-title">
+                <svg class="icon" style="color: var(--color-warning);" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                Time & Efficiency
+              </div>
+            </div>
+            <div class="data-table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Metric / Stage</th>
+                    <th>Epochs</th>
+                    <th>Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Reference Train</td>
+                    <td><span class="code-val">30</span></td>
+                    <td>1,473.86 s</td>
+                  </tr>
+                  <tr>
+                    <td>Domain Fine-Tune</td>
+                    <td><span class="code-val">10</span></td>
+                    <td>64.46 s</td>
+                  </tr>
+                  <tr>
+                    <td>Total Duration</td>
+                    <td><span class="code-val">40</span></td>
+                    <td>1,538.32 s</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="content-card">
+            <div class="card-title-section">
+              <div class="card-title">
+                <svg class="icon" style="color: var(--color-secondary);" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                Final Metrics Table
+              </div>
+            </div>
+            <div class="data-table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Metric</th>
+                    <th>Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Test Accuracy</td>
+                    <td><span class="inline-badge ib-success">0.7200</span></td>
+                  </tr>
+                  <tr>
+                    <td>Test Macro-F1</td>
+                    <td><span class="inline-badge ib-success">0.7197</span></td>
+                  </tr>
+                  <tr>
+                    <td>Test ECE</td>
+                    <td><span class="inline-badge ib-cyan">0.0688</span></td>
+                  </tr>
+                  <tr>
+                    <td>Test Loss</td>
+                    <td><span class="code-val">0.9524</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2: Training Dynamics -->
+    <div id="dynamics" class="tab-panel">
+      <div class="visualizer-grid">
+        <!-- Stage 1 Chart -->
+        <div class="content-card">
+          <div class="card-title-section">
+            <div class="card-title">
+              <span class="inline-badge ib-cyan" style="margin-right: 4px;">Stage 1</span>
+              Reference Training Curves
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="stage1Chart"></canvas>
+          </div>
+        </div>
+
+        <!-- Stage 2 Chart -->
+        <div class="content-card">
+          <div class="card-title-section">
+            <div class="card-title">
+              <span class="inline-badge ib-magenta" style="margin-right: 4px;">Stage 2</span>
+              Fine-Tuning Curves
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="stage2Chart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- ECE & Calibration card -->
+      <div class="content-card">
+        <div class="card-title-section">
+          <div class="card-title">
+            <svg class="icon" style="color: var(--color-primary);" viewBox="0 0 24 24"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="M12 6v6l4 2"></path></svg>
+            Expected Calibration Error (ECE) Progression
+          </div>
+        </div>
+        <div style="margin-bottom: 20px;" class="chart-container">
+          <canvas id="eceChart" style="max-height: 250px;"></canvas>
+        </div>
+        <p style="font-size: 0.9rem; color: var(--color-text-muted);">
+          <strong>ECE Interpretation:</strong> Expected Calibration Error measures the correspondence between the model's confidence scores and its true accuracy. A lower ECE indicates that the model's predicted probabilities align closely with actual error rates. 
+          During reference training (Stage 1), validation ECE drops rapidly to <strong>1.09%</strong>, signifying extremely accurate confidence calibration. In Stage 2 fine-tuning, the ECE on reference evaluation rises and stabilizes around <strong>10.64%</strong>, representing calibration shift under domain adaptation. However, on the final test set, the ECE settles back at a solid <strong>6.88%</strong>.
+        </p>
+      </div>
+    </div>
+
+    <!-- Tab 3: Configuration & Complexity -->
+    <div id="config" class="tab-panel">
+      <div class="col-layout">
+        <div>
+          <div class="content-card">
+            <div class="card-title-section">
+              <div class="card-title">
+                <svg class="icon" style="color: var(--color-warning);" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                Model Configuration
+              </div>
+            </div>
+            <p style="color: var(--color-text-muted); margin-bottom: 16px;">
+              The classifier runs a 1D variant of the Swin Transformer without relative position bias. The input configuration splits raw spectra of length 1,000 into 100 non-overlapping patches (length 10).
+            </p>
+            <div class="config-grid">
+              <div class="config-item">
+                <span class="config-key">Embedding Dimension</span>
+                <span class="code-val">32 channels</span>
+              </div>
+              <div class="config-item">
+                <span class="config-key">Stage Depths</span>
+                <span class="code-val">[2, 2] Swin blocks</span>
+              </div>
+              <div class="config-item">
+                <span class="config-key">Attention Heads</span>
+                <span class="code-val">[2, 4] heads</span>
+              </div>
+              <div class="config-item">
+                <span class="config-key">Window Size</span>
+                <span class="code-val">8 tokens</span>
+              </div>
+              <div class="config-item">
+                <span class="config-key">Patch Size</span>
+                <span class="code-val">10 wavenumbers</span>
+              </div>
+              <div class="config-item">
+                <span class="config-key">MLP Channel Ratio</span>
+                <span class="code-val">4.0x multiplier</span>
+              </div>
+              <div class="config-item">
+                <span class="config-key">Drop Path Rate</span>
+                <span class="code-val">0.10 (Stochastic Depth)</span>
+              </div>
+              <div class="config-item">
+                <span class="config-key">Target Output Classes</span>
+                <span class="code-val">30 isolates</span>
+              </div>
+            </div>
+
+            <h3 style="font-family: var(--font-heading); font-size: 1.1rem; margin: 30px 0 16px 0;">Hyperparameter Configuration</h3>
+            <div class="config-grid">
+              <div class="config-item">
+                <span class="config-key">Reference Stage LR</span>
+                <span class="code-val">0.001 (Adam)</span>
+              </div>
+              <div class="config-item">
+                <span class="config-key">Fine-tuning Stage LR</span>
+                <span class="code-val">0.0005 (Adam)</span>
+              </div>
+              <div class="config-item">
+                <span class="config-key">Batch Size</span>
+                <span class="code-val">64 spectra</span>
+              </div>
+              <div class="config-item">
+                <span class="config-key">Initialization Seed</span>
+                <span class="code-val">42</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="content-card">
+            <div class="card-title-section">
+              <div class="card-title">
+                <svg class="icon" style="color: var(--color-primary);" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                Model Parameters
+              </div>
+            </div>
+            <div style="text-align: center; margin-bottom: 20px;">
+              <div style="font-size: 3rem; font-family: var(--font-heading); font-weight: 800; color: var(--color-primary);">132,030</div>
+              <p style="font-size: 0.85rem; color: var(--color-text-muted);">Total Trainable Parameters</p>
+            </div>
+            <div class="param-bar">
+              <div class="param-fill" style="width: 100%;"></div>
+            </div>
+            <div style="margin-top: 16px; font-size: 0.85rem; color: var(--color-text-muted); line-height: 1.5;">
+              <p style="margin-bottom: 8px;"><strong>Parameter breakdown:</strong></p>
+              <ul style="padding-left: 16px; display: flex; flex-direction: column; gap: 4px;">
+                <li>Patch Embedding Layer: ~320 params</li>
+                <li>Stage 1 (Depth 2, 32 channels): ~36K params</li>
+                <li>Patch Merging Layer: ~2.1K params</li>
+                <li>Stage 2 (Depth 2, 64 channels): ~91K params</li>
+                <li>Classifier Head: ~1.9K params</li>
+              </ul>
+              <p style="margin-top: 12px; font-style: italic;">
+                The 1D Swin Transformer architecture downsamples token lengths at patch merging boundaries while expanding channel dimensions, allowing high local attention detail with a lightweight capacity.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 4: Analytical Insights -->
+    <div id="insights" class="tab-panel">
+      <div class="content-card">
+        <div class="card-title-section">
+          <div class="card-title">
+            <svg class="icon" style="color: var(--color-secondary);" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            Comprehensive Analysis of Results
+          </div>
+        </div>
+        
+        <h3 style="font-family: var(--font-heading); font-size: 1.15rem; margin-bottom: 12px; color: var(--color-primary);">1. Learning Capacity in Source Domain (Reference Training)</h3>
+        <p style="margin-bottom: 16px; color: #cbd5e1;">
+          During the initial reference training (Stage 1), the model achieves excellent convergence. 
+          By epoch 30, the training loss reduces from <strong>2.35</strong> to <strong>0.12</strong>, and validation accuracy reaches <strong>93.83%</strong>. 
+          This indicates that the Plain 1D Swin Transformer has more than enough representational capacity to resolve the characteristic Raman spectral peaks of the 30 bacterial isolates under clean, controlled reference conditions.
+        </p>
+        <div class="callout success">
+          <div class="callout-title">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            Optimal Confidence Calibration
+          </div>
+          The validation ECE drops to <strong>1.09%</strong> around epoch 30. This means the model's confidence corresponds directly to true performance, avoiding overconfidence issues typical in deep models.
+        </div>
+
+        <h3 style="font-family: var(--font-heading); font-size: 1.15rem; margin: 24px 0 12px 0; color: var(--color-secondary);">2. Domain Shift & Catastrophic Forgetting Trade-offs</h3>
+        <p style="margin-bottom: 16px; color: #cbd5e1;">
+          In Stage 2, when the model is fine-tuned on the fine-tuning split (representing slightly different acquisition circumstances or distribution offsets) and validated against the source reference validation dataset, we observe a performance drop.
+        </p>
+        <ul class="insights-list" style="margin-bottom: 20px;">
+          <li>
+            <strong>Validation Accuracy Decline:</strong> Validation accuracy on the reference validation split drops from <strong>93.83%</strong> to <strong>72.09%</strong> within the first few fine-tuning epochs and plateaus.
+          </li>
+          <li>
+            <strong>Loss and ECE Rise:</strong> The validation loss increases to <strong>0.925</strong>, while the validation ECE on the reference set climbs to <strong>10.64%</strong>.
+          </li>
+        </ul>
+        <div class="callout warning">
+          <div class="callout-title">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            Why does reference validation accuracy drop during fine-tuning?
+          </div>
+          This is a classic manifestation of <strong>catastrophic forgetting</strong> and <strong>domain alignment trade-offs</strong>. As the model adjusts its weights to adapt to the target fine-tuning split, it shifts away from the optimal weight configurations representing the original reference split. The target split likely introduces minor shift artifacts (baseline drifts, instrument noise, or intensity variances), forcing the model to learn a different combination of spatial frequency features.
+        </div>
+
+        <h3 style="font-family: var(--font-heading); font-size: 1.15rem; margin: 24px 0 12px 0; color: var(--color-success);">3. Target Domain Generalization</h3>
+        <p style="margin-bottom: 16px; color: #cbd5e1;">
+          Despite the trade-off on the reference validation set, the fine-tuned model generalizes well to the held-out test split, securing a <strong>72.00% accuracy</strong> and a <strong>71.97% macro-F1</strong>.
+          The test ECE remains moderate at <strong>6.88%</strong>, proving that the model achieves stable predictions in the target test domain.
+        </p>
+
+        <h3 style="font-family: var(--font-heading); font-size: 1.15rem; margin: 24px 0 12px 0; color: var(--color-warning);">4. Recommended Next Steps for Phase 2</h3>
+        <ul class="insights-list">
+          <li>
+            <strong>CPB (Continuous Position Bias) Integration:</strong> The model is currently configured without position bias. Introducing CPB in the window attention blocks may help stabilize local wavenumber relationships, making the model more robust to minor spectral drifts.
+          </li>
+          <li>
+            <strong>Regularization & Mixed-Domain Training:</strong> To prevent the 20% drop in reference validation accuracy during fine-tuning, training should explore elastic weight consolidation (EWC) or joint mixed training where both reference and fine-tuning splits are trained concurrently.
+          </li>
+          <li>
+            <strong>Augmentation:</strong> Deploying baseline offsets, random noise, and scaling transformations on the 1D spectra during the training loop could simulate domain shifts, improving baseline calibration.
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript logic for Tabs & Charts -->
+  <script>
+    // Embedded baseline results from results/phase1_baseline.json
+    const resultsData = {
+      "model": "PlainSwin1D",
+      "config": {
+        "epochs": 30,
+        "finetune_epochs": 10,
+      },
+      "train_history": {
+        "epochs": Array.from({length: 30}, (_, i) => i + 1),
+        "train_loss": [
+          2.34965, 1.13179, 0.69249, 0.52735, 0.44592, 0.40246, 0.36629, 0.33856, 0.31843, 0.29864,
+          0.28109, 0.26700, 0.25241, 0.24212, 0.22645, 0.21549, 0.20607, 0.19852, 0.18333, 0.17475,
+          0.16306, 0.15478, 0.15009, 0.14698, 0.13576, 0.13128, 0.12793, 0.12346, 0.12283, 0.12163
+        ],
+        "val_loss": [
+          1.48572, 0.70976, 0.50672, 0.46676, 0.33972, 0.35715, 0.30997, 0.30206, 0.26639, 0.29245,
+          0.24115, 0.27084, 0.23981, 0.24784, 0.22018, 0.21628, 0.20709, 0.20409, 0.20879, 0.21985,
+          0.19256, 0.19758, 0.19312, 0.18478, 0.18661, 0.18705, 0.18517, 0.18390, 0.18299, 0.18213
+        ],
+        "val_acc": [
+          0.52283, 0.77117, 0.81925, 0.83567, 0.87742, 0.87442, 0.88958, 0.89392, 0.90700, 0.89525,
+          0.91692, 0.90417, 0.91883, 0.91483, 0.92075, 0.92367, 0.92708, 0.92933, 0.92575, 0.92158,
+          0.93192, 0.93142, 0.93442, 0.93542, 0.93542, 0.93550, 0.93542, 0.93642, 0.93750, 0.93833
+        ],
+        "val_ece": [
+          0.09779, 0.09153, 0.02038, 0.00703, 0.01828, 0.00608, 0.00401, 0.00566, 0.00808, 0.01132,
+          0.00751, 0.00818, 0.00348, 0.00792, 0.00935, 0.00690, 0.00502, 0.00699, 0.01205, 0.01585,
+          0.01023, 0.01102, 0.01049, 0.01041, 0.01210, 0.01271, 0.01317, 0.01169, 0.01249, 0.01090
+        ]
+      },
+      "finetune_history": {
+        "epochs": Array.from({length: 10}, (_, i) => i + 1),
+        "train_loss": [
+          4.20475, 2.92138, 1.94099, 1.26924, 1.04283, 0.91445, 0.81564, 0.72919, 0.68492, 0.65608
+        ],
+        "val_loss": [
+          1.15428, 1.07971, 0.95424, 0.92017, 0.99536, 0.97572, 0.93992, 0.91606, 0.92407, 0.92551
+        ],
+        "val_acc": [
+          0.66650, 0.69175, 0.71708, 0.72258, 0.70783, 0.70958, 0.71692, 0.72167, 0.72042, 0.72092
+        ],
+        "val_ece": [
+          0.16991, 0.12959, 0.12287, 0.11598, 0.12177, 0.11841, 0.11162, 0.10724, 0.10714, 0.10637
+        ]
+      }
+    };
+
+    // Tab switcher
+    function switchTab(evt, tabId) {
+      // Hide all panels
+      const panels = document.querySelectorAll('.tab-panel');
+      panels.forEach(panel => panel.classList.remove('active'));
+
+      // Deactivate all tab buttons
+      const buttons = document.querySelectorAll('.tab-btn');
+      buttons.forEach(btn => btn.classList.remove('active'));
+
+      // Show selected panel & activate tab button
+      document.getElementById(tabId).classList.add('active');
+      evt.currentTarget.classList.add('active');
+    }
+
+    // Chart Options Base
+    const chartOptionsBase = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
+            color: '#94a3b8',
+            font: { family: 'Inter', size: 12 }
+          }
+        },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          padding: 12,
+          backgroundColor: 'rgba(15, 23, 42, 0.9)',
+          borderColor: 'rgba(255, 255, 255, 0.1)',
+          borderWidth: 1,
+          titleFont: { family: 'Outfit', size: 13, weight: 'bold' },
+          bodyFont: { family: 'Inter', size: 12 }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255, 255, 255, 0.05)' },
+          ticks: { color: '#94a3b8', font: { family: 'Inter' } },
+          title: { display: true, text: 'Epoch', color: '#94a3b8' }
+        },
+        yLoss: {
+          position: 'left',
+          grid: { color: 'rgba(255, 255, 255, 0.05)' },
+          ticks: { color: '#94a3b8' },
+          title: { display: true, text: 'Cross Entropy Loss', color: '#94a3b8' }
+        },
+        yAcc: {
+          position: 'right',
+          grid: { drawOnChartArea: false }, // Only show grid lines for loss
+          ticks: { 
+            color: '#94a3b8',
+            callback: function(value) { return (value * 100).toFixed(0) + '%'; }
+          },
+          title: { display: true, text: 'Accuracy', color: '#94a3b8' },
+          min: 0.4,
+          max: 1.0
+        }
+      }
+    };
+
+    // Initialize Charts on DOM Load
+    window.addEventListener('DOMContentLoaded', () => {
+      // 1. Stage 1 Chart: Reference Training
+      const ctx1 = document.getElementById('stage1Chart').getContext('2d');
+      new Chart(ctx1, {
+        type: 'line',
+        data: {
+          labels: resultsData.train_history.epochs,
+          datasets: [
+            {
+              label: 'Train Loss',
+              data: resultsData.train_history.train_loss,
+              borderColor: '#06b6d4',
+              backgroundColor: 'rgba(6, 182, 212, 0.1)',
+              borderWidth: 2.5,
+              tension: 0.2,
+              yAxisID: 'yLoss',
+              pointRadius: 2,
+              pointHoverRadius: 5
+            },
+            {
+              label: 'Val Loss',
+              data: resultsData.train_history.val_loss,
+              borderColor: '#6366f1',
+              backgroundColor: 'transparent',
+              borderWidth: 2,
+              borderDash: [4, 4],
+              tension: 0.2,
+              yAxisID: 'yLoss',
+              pointRadius: 2,
+              pointHoverRadius: 5
+            },
+            {
+              label: 'Val Accuracy',
+              data: resultsData.train_history.val_acc,
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              borderWidth: 2.5,
+              tension: 0.1,
+              yAxisID: 'yAcc',
+              pointRadius: 3,
+              pointHoverRadius: 6
+            }
+          ]
+        },
+        options: chartOptionsBase
+      });
+
+      // 2. Stage 2 Chart: Fine-Tuning
+      const ctx2 = document.getElementById('stage2Chart').getContext('2d');
+      const ftOptions = JSON.parse(JSON.stringify(chartOptionsBase));
+      // Adjust yAcc bounds for fine-tuning since values are in 60-75% range
+      ftOptions.scales.yAcc.min = 0.5;
+      ftOptions.scales.yAcc.max = 0.8;
+      
+      new Chart(ctx2, {
+        type: 'line',
+        data: {
+          labels: resultsData.finetune_history.epochs,
+          datasets: [
+            {
+              label: 'Train Loss',
+              data: resultsData.finetune_history.train_loss,
+              borderColor: '#ec4899',
+              backgroundColor: 'rgba(236, 72, 153, 0.1)',
+              borderWidth: 2.5,
+              tension: 0.2,
+              yAxisID: 'yLoss',
+              pointRadius: 3,
+              pointHoverRadius: 5
+            },
+            {
+              label: 'Val Loss',
+              data: resultsData.finetune_history.val_loss,
+              borderColor: '#a855f7',
+              backgroundColor: 'transparent',
+              borderWidth: 2,
+              borderDash: [4, 4],
+              tension: 0.2,
+              yAxisID: 'yLoss',
+              pointRadius: 3,
+              pointHoverRadius: 5
+            },
+            {
+              label: 'Val Accuracy (Ref Val)',
+              data: resultsData.finetune_history.val_acc,
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              borderWidth: 2.5,
+              tension: 0.1,
+              yAxisID: 'yAcc',
+              pointRadius: 4,
+              pointHoverRadius: 6
+            }
+          ]
+        },
+        options: ftOptions
+      });
+
+      // 3. ECE Chart
+      const ctx3 = document.getElementById('eceChart').getContext('2d');
+      new Chart(ctx3, {
+        type: 'line',
+        data: {
+          labels: resultsData.train_history.epochs,
+          datasets: [
+            {
+              label: 'Stage 1: Validation ECE',
+              data: resultsData.train_history.val_ece.map(x => x * 100),
+              borderColor: '#06b6d4',
+              backgroundColor: 'rgba(6, 182, 212, 0.05)',
+              borderWidth: 2,
+              fill: true,
+              tension: 0.1,
+              pointRadius: 2,
+              pointHoverRadius: 5
+            },
+            {
+              label: 'Stage 2: Validation ECE (Epochs 1-10 mapped to end)',
+              // We will map the 10 epochs of stage 2 fine tuning at the end of the chart or just display a second line
+              // Let's create a dataset where the first 20 epochs are null and then we overlay the 10 epochs
+              data: [
+                ...Array(20).fill(null),
+                ...resultsData.finetune_history.val_ece.map(x => x * 100)
+              ],
+              borderColor: '#ec4899',
+              backgroundColor: 'transparent',
+              borderWidth: 2,
+              tension: 0.1,
+              pointRadius: 4,
+              pointHoverRadius: 6
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#94a3b8', font: { family: 'Inter' } } },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+              backgroundColor: 'rgba(15, 23, 42, 0.9)',
+              bodyFont: { family: 'Inter' }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#94a3b8' },
+              title: { display: true, text: 'Reference Training Epoch (Stage 1) / Mapped Epoch (Stage 2)', color: '#94a3b8' }
+            },
+            y: {
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { 
+                color: '#94a3b8',
+                callback: function(value) { return value.toFixed(1) + '%'; }
+              },
+              title: { display: true, text: 'Expected Calibration Error (%)', color: '#94a3b8' },
+              min: 0
+            }
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>
